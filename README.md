@@ -1,10 +1,12 @@
-# workbuddy-daily-checkin
+# workbuddy-auto-checkin
 
-用 GitHub Actions 领取 WorkBuddy「Buddy 加油站」每天 100 积分。电脑不用开着。活跃地图如果还停在「轻轻路过」，同一轮会再补一次有回复的短对话。
+这是 WorkBuddy 自动签到和活跃地图打卡。用 GitHub Actions 领取「Buddy 加油站」每天 100 积分，电脑不用开着。活跃地图如果还停在「轻轻路过」，同一轮会再补一次有回复的短对话。
 
-建议把公开仓库命名为 **`workbuddy-daily-checkin`**。这个名字对应的是每天自动签到，不包含个人账号，别人搜 WorkBuddy 签到时也能对上。
+本仓库采用 [MIT 许可证](LICENSE)。你可以复制这份代码、修改它，并自己运行。
 
-这不是官方工具。接口来自桌面端的公开行为，可能变更。请遵守 WorkBuddy 服务条款，风险自负。仓库目前没有许可证；公开给别人复制前，请自行在根目录加上许可证文件。
+建议把公开仓库命名为 **`workbuddy-auto-checkin`**。这个名字对应自动签到和活跃地图打卡，不包含个人账号，别人搜 WorkBuddy 签到时也能对上。
+
+这不是官方工具。接口来自桌面端的公开行为，可能变更。请遵守 WorkBuddy 服务条款，风险自负。
 
 ## 技术框架
 
@@ -37,7 +39,7 @@ scripts/checkin.py
 ### 1. 准备你自己的仓库
 
 1. 电脑上安装并登录过 WorkBuddy 桌面端（5.3.8 及以上，会写出明文登录文件）。
-2. 在 GitHub 新建一个仓库，名字用 `workbuddy-daily-checkin`。
+2. 在 GitHub 新建一个仓库，名字用 `workbuddy-auto-checkin`。
 3. 只放入**当前这份代码**。不要把带有旧提交的历史推上去。
 4. 打开 **Settings → Actions → General**，允许 Actions 运行。默认分支保持为放有 workflow 的分支。
 
