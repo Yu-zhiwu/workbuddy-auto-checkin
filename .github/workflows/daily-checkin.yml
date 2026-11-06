@@ -1,0 +1,38 @@
+name: WorkBuddy Daily Checkin
+
+on:
+  schedule:
+    # 北京时间 00:36 = UTC 16:36。不要改这条 cron，也不要改成整点。
+    - cron: "36 16 * * *"
+    # 北京时间 12:23 = UTC 04:23。同一天补跑；已签到会跳过领取，仍会兑换连登奖励。
+    - cron: "23 4 * * *"
+    # 北京时间 20:41 = UTC 12:41。前两槽被丢掉时，当天晚上再领一次。活跃地图哪一槽先看到空格，就由那一槽点亮。
+    - cron: "41 12 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  checkin:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Claim daily credits
+        env:
+          WORKBUDDY_ACCESS_TOKEN: ${{ secrets.WORKBUDDY_ACCESS_TOKEN }}
+          WORKBUDDY_REFRESH_TOKEN: ${{ secrets.WORKBUDDY_REFRESH_TOKEN }}
+          WORKBUDDY_UID: ${{ secrets.WORKBUDDY_UID }}
+          WORKBUDDY_DOMAIN: ${{ secrets.WORKBUDDY_DOMAIN }}
+          WORKBUDDY_ENTERPRISE_ID: ${{ secrets.WORKBUDDY_ENTERPRISE_ID }}
+          # 公开仓库保持为空。私有仓库想在日志里看账户总额时，把 Actions Variable 设为 1。
+          WORKBUDDY_SHOW_BALANCE: ${{ vars.WORKBUDDY_SHOW_BALANCE }}
+        run: python scripts/checkin.py

@@ -1,0 +1,18 @@
+# Local secrets and login-state files — never commit
+*.info
+*.token
+.env
+.env.*
+config.json
+config.local.json
+workbuddy-desktop.info
+
+# 真实余额账本含个人额度，不入库。格式见 docs/wallet-daily.example.json
+docs/wallet-daily.json
+
+# Logs / cache
+*.log
+__pycache__/
+*.py[cod]
+.venv/
+venv/
