@@ -4,7 +4,7 @@
 
 本仓库采用 [MIT 许可证](LICENSE)。你可以复制这份代码、修改它，并自己运行。
 
-建议把公开仓库命名为 **`workbuddy-auto-checkin`**。这个名字对应自动签到和活跃地图打卡，不包含个人账号，别人搜 WorkBuddy 签到时也能对上。
+放到你自己的仓库时，名字可以用 **`workbuddy-auto-checkin`**。这个名字只表示自动签到和活跃地图打卡，不包含个人账号。
 
 这不是官方工具。接口来自桌面端的公开行为，可能变更。请遵守 WorkBuddy 服务条款，风险自负。
 
@@ -40,7 +40,7 @@ scripts/checkin.py
 
 1. 电脑上安装并登录过 WorkBuddy 桌面端（5.3.8 及以上，会写出明文登录文件）。
 2. 在 GitHub 新建一个仓库，名字用 `workbuddy-auto-checkin`。
-3. 只放入**当前这份代码**。不要把带有旧提交的历史推上去。
+3. 把当前这份代码放进去。不要把登录文件或旧的运行记录一起提交。
 4. 打开 **Settings → Actions → General**，允许 Actions 运行。默认分支保持为放有 workflow 的分支。
 
 ### 2. 取出登录态
@@ -106,7 +106,7 @@ Actions 上默认**不打印**账户总额、对比基准和历史签到日期�
 - 真实余额的增长额、失效额
 - 今日活跃分，以及有没有补上对话
 
-本机直接运行脚本时，仍会打印账户总额。私有仓库如果也想在 Actions 日志里看总额：到 **Settings → Secrets and variables → Actions → Variables**，新建 `WORKBUDDY_SHOW_BALANCE`，值填 `1`。公开仓库不要设这个变量。
+本机直接运行脚本时，仍会打印账户总额。只有你自己能看的仓库，如果也想在 Actions 日志里看总额：到 **Settings → Secrets and variables → Actions → Variables**，新建 `WORKBUDDY_SHOW_BALANCE`，值填 `1`。别人也能打开这个仓库时，不要设这个变量。
 
 ## 失败了怎么看
 
@@ -136,14 +136,14 @@ python3 scripts/test_checkin.py       # 不访问网络的测试
 
 本地账本默认写到 `docs/wallet-daily.json`。这个文件已在 `.gitignore` 里。格式见 `docs/wallet-daily.example.json`。换路径可以设置 `WORKBUDDY_WALLET_LEDGER`。
 
-## 公开仓库之前
+## 保管好登录态
 
-仓库当前文件里没有 token、uid、手机号。登录态只在 GitHub Secrets 中，公开仓库也看不到 Secret 的值。
+仓库文件里没有 token、uid 或手机号。登录态放在你自己仓库的 GitHub Secrets 里，Secret 的值不会写进仓库文件。
 
-公开前请确认：
+请留意：
 
 - 不要提交 `workbuddy-desktop.info`、`.env` 或 token 文件。`.gitignore` 已排除。
 - 不要在 Issue、PR、README 里粘贴 token。
 - 余额账本 `docs/wallet-daily.json` 不入库。
-- `WORKBUDDY_SHOW_BALANCE` 不要设为 `1`。增长额仍会出现在日志里。
-- 如果这个仓库以前跑过签到，旧的 Actions 日志和 Git 历史里可能有余额数字，早期日志还可能有 token 片段。不要把旧历史推到公开仓库。做法是新建一个仓库，只提交现在这棵文件树。原来的私有仓库如果继续自己用，先删掉旧的 Actions 运行记录，再考虑是否公开。
+- 别人也能看到仓库时，不要把 `WORKBUDDY_SHOW_BALANCE` 设为 `1`。增长额仍会出现在日志里。
+- 如果另一份仓库里已经跑过签到，旧的 Actions 日志和 Git 历史里可能有余额数字，早期日志还可能有 token 片段。复制代码时只带上现在这棵文件树。
