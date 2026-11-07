@@ -33,6 +33,6 @@ jobs:
           WORKBUDDY_UID: ${{ secrets.WORKBUDDY_UID }}
           WORKBUDDY_DOMAIN: ${{ secrets.WORKBUDDY_DOMAIN }}
           WORKBUDDY_ENTERPRISE_ID: ${{ secrets.WORKBUDDY_ENTERPRISE_ID }}
-          # 公开仓库保持为空。私有仓库想在日志里看账户总额时，把 Actions Variable 设为 1。
+          # 别人也能看到仓库时保持为空。只有自己能看的仓库，想在日志里看账户总额时，把 Actions Variable 设为 1。
           WORKBUDDY_SHOW_BALANCE: ${{ vars.WORKBUDDY_SHOW_BALANCE }}
         run: python scripts/checkin.py

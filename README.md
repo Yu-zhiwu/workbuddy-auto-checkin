@@ -4,7 +4,7 @@
 
 本仓库采用 [MIT 许可证](LICENSE)。你可以复制这份代码、修改它，并自己运行。
 
-放到你自己的仓库时，名字可以用 **`workbuddy-auto-checkin`**。这个名字只表示自动签到和活跃地图打卡，不包含个人账号。
+别人要用自己的 WorkBuddy 账号自动签到，需要一份自己能控制的仓库来放登录态。推荐直接 **Fork 本仓库**，不必从零新建。步骤见下面的操作手册。
 
 这不是官方工具。接口来自桌面端的公开行为，可能变更。请遵守 WorkBuddy 服务条款，风险自负。
 
@@ -34,18 +34,30 @@ scripts/checkin.py
 
 三条定时都躲开整点。GitHub 可能推迟或丢掉其中一槽，后面的槽会补上。定时任务只在默认分支上运行。
 
-## 使用教程
+## 新用户操作手册
 
-### 1. 准备你自己的仓库
+定时签到跑在你自己的仓库里，用的是你自己的登录态。原仓库的 Actions 只读取这份仓库的 Secrets，也就是仓库主人的账号。它不会按来访的人各跑一遍，别人也不能把 token 写进原仓库。
 
-1. 电脑上安装并登录过 WorkBuddy 桌面端（5.3.8 及以上，会写出明文登录文件）。
-2. 在 GitHub 新建一个仓库，名字用 `workbuddy-auto-checkin`。
-3. 把当前这份代码放进去。不要把登录文件或旧的运行记录一起提交。
-4. 打开 **Settings → Actions → General**，允许 Actions 运行。默认分支保持为放有 workflow 的分支。
+不必从零新建空仓库。要使用这个项目，并让原仓库记下一次 Fork，按这个顺序做：
+
+1. 打开 [suows/workbuddy-auto-checkin](https://github.com/suows/workbuddy-auto-checkin)，点 **Star**。
+2. 再点 **Fork**，把副本放到你的账号下。名字保持 `workbuddy-auto-checkin` 即可。
+
+Star 让更多人能找到这个项目。Fork 才是你的签到任务，会计入原仓库的 Fork 数。只点 Star、不 Fork，不会给你的账号签到。只 Fork、不点 Star，签到一样能跑。
+
+Fork 出来的页面别人也能打开。登录态放在 Secrets 里，别人看不到 Secret 的值。Actions 日志别人能看到，所以不要设置 `WORKBUDDY_SHOW_BALANCE`。想让日志只有自己能看，用手册最后的私有仓库做法；那种做法不计 Fork。
+
+### 1. 启用你 Fork 里的 Actions
+
+新建的 Fork 默认不跑定时任务。下面每一步都在**你自己的 Fork** 里做，不要停在原仓库页面。
+
+1. 点 **Actions**。如果 GitHub 要求确认，点 **I understand my workflows, go ahead and enable them**。
+2. 左侧点 **WorkBuddy Daily Checkin**。如果有 **Enable workflow**，点它。
+3. 打开 **Settings → Actions → General**，允许 Actions 运行。默认分支保持为放有 workflow 的分支，一般是 `main`。
 
 ### 2. 取出登录态
 
-用记事本或 VS Code 打开下面的文件。不要把文件本身提交到 Git，也不要发给别人。
+先在自己的电脑上安装并登录 WorkBuddy 桌面端（5.3.8 及以上）。它会写出明文登录文件。用记事本或 VS Code 打开下面的文件。不要把文件本身提交到 Git，也不要发给别人。
 
 | 系统 | 路径 |
 |------|------|
@@ -69,9 +81,9 @@ $j = Get-Content -Raw $p | ConvertFrom-Json
 "token_tail=$($j.auth.accessToken.Substring($j.auth.accessToken.Length-4))"
 ```
 
-### 3. 写入 GitHub Secrets
+### 3. 写入你这份仓库的 Secrets
 
-仓库页面：**Settings → Secrets and variables → Actions → New repository secret**
+在你的 Fork 页面：**Settings → Secrets and variables → Actions → New repository secret**
 
 | Secret | 必填 | 填什么 |
 |--------|------|--------|
@@ -81,15 +93,38 @@ $j = Get-Content -Raw $p | ConvertFrom-Json
 | `WORKBUDDY_DOMAIN` | 否 | 默认 `www.codebuddy.cn` |
 | `WORKBUDDY_ENTERPRISE_ID` | 否 | 仅企业账号 |
 
-加密信封（字段里有 `$wbEncrypted`）不能直接贴进去。
+加密信封（字段里有 `$wbEncrypted`）不能直接贴进去。这些 Secret 只属于你的 Fork，原仓库读不到。
 
-### 4. 手动跑一次
+### 4. 在你的 Fork 里手动跑一次
 
-1. 打开 **Actions → WorkBuddy Daily Checkin → Run workflow**。
+1. 仍在你的 Fork 打开 **Actions → WorkBuddy Daily Checkin → Run workflow**。不要在原仓库点运行，那一次用的是仓库主人的登录态。
 2. 成功时，日志最后一行 JSON 的 `result` 是 `CLAIMED`（这次领到）或 `ALREADY`（今天已经领过）。
 3. 完全退出 WorkBuddy 再打开，进入「Buddy 加油站」。今天的圆点是实心、连续天数加 1、本期累计加 100，就说明领到了。右上角还会过期的总额不能用来判断这次领取。
 
-之后不用每天开电脑。三条定时会自己跑。
+之后不用每天开电脑。三条定时在你的 Fork 的默认分支上跑，北京时间 00:36、12:23、20:41。GitHub 可能推迟或丢掉其中一槽。别人也能打开的仓库如果连续 60 天没有活动，GitHub 会关掉定时任务。回到 **WorkBuddy Daily Checkin**，重新点 **Enable workflow**。
+
+### 5. 原仓库更新之后
+
+打开你的 Fork，点 **Sync fork**，再点 **Update branch**。Secrets 还在，不用重填。不要把登录文件提交进 Fork。
+
+### 想让仓库只有自己能看
+
+Fork 不能改成私有。请另建一个只有自己能看的仓库，只放入当前这份代码。这种仓库不计 Fork。项目帮到你的话，仍可以回原仓库点 Star。
+
+私有仓库建好后，在本机执行：
+
+```bash
+git clone --depth 1 https://github.com/suows/workbuddy-auto-checkin.git
+cd workbuddy-auto-checkin
+git checkout --orphan fresh
+git add -A
+git commit -m "Start from workbuddy-auto-checkin"
+git branch -M main
+git remote set-url origin https://github.com/你的用户名/你的私有仓库.git
+git push -u origin main
+```
+
+然后从本手册第 1 步做起：启用 Actions、写入 Secrets、手动跑一次。只有这种别人打不开的仓库，才可以在需要时把 `WORKBUDDY_SHOW_BALANCE` 设为 `1`。以后要更新，再从原仓库取一次当前文件，放进你的私有仓库。不要把登录文件一起提交。
 
 ## 每天实际做了什么
 
@@ -124,7 +159,7 @@ accessToken 过期后，如果 Secret 里有 refreshToken 或整份未加密登�
 
 ## 本地试跑
 
-不要把 token 写进文件再提交。
+只在本机跑时，电脑要开着，也不会出现在原仓库的 Fork 列表里。要每天自动跑，用上面的 Fork。不要把 token 写进文件再提交。
 
 ```bash
 export WORKBUDDY_ACCESS_TOKEN='你的 token'
