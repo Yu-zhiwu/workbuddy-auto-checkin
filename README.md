@@ -30,10 +30,10 @@
 
 做完时你应该看到：右上角是你的头像，点开能看到你的用户名。
 
-### 第 2 步：给原仓库点 Star，再 Fork 一份到你的账号
+### 第 2 步：点 Star[doge]，再 Fork 一份到你的账号
 
 1. 打开 [suows/workbuddy-auto-checkin](https://github.com/suows/workbuddy-auto-checkin)。
-2. 页面右上角点 **Star**（星标）。按钮上的数字会加 1。Star 让更多人能找到这个项目，不点也可以继续，但请顺手点上。
+2. 页面右上角点 **Star**（星标）。按钮上的数字会加 1。Star 让更多人能找到这个项目。
 3. 点旁边的 **Fork**（复刻）。
 4. 在 **Create a new fork** 页面确认 **Owner** 是你的用户名。仓库名保持 `workbuddy-auto-checkin`。这个名字已被占用时，改成 `workbuddy-auto-checkin-2` 也可以。
 5. 点绿色的 **Create fork**（创建复刻），等到页面自己跳走。
