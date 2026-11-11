@@ -98,13 +98,85 @@ Fork 出来的页面别人也能打开。登录态放在 Secrets 里，别人看
 
 文件夹里找到 `workbuddy-desktop.info`。Windows 用记事本打开，macOS 用文本编辑打开。找不到这个文件时，先确认桌面端已经登录，然后完全退出再找一次。
 
-打开后看里面有没有 `$wbEncrypted`。有的话，这份是加密信封，不能贴进 GitHub。请换 5.3.8 及以上版本重新登录，直到文件里能直接看到 `accessToken` 这几个字母。
+打开后，能直接复制的登录文件是一大段以 `{` 开头、以 `}` 结尾的文字，里面有 `accessToken`，并且没有 `$wbEncrypted`。看到这样，就去做第 5 步，把整份文件贴进 Secret。
 
-做完时你应该看到：记事本里是一大段以 `{` 开头、以 `}` 结尾的文字，里面有 `accessToken`，并且没有 `$wbEncrypted`。
+如果里面是 `$wbEncrypted`，或者找不到 `accessToken`，这份文件贴进 GitHub 也不能用。不用反复重装桌面端。改用下面的短信办法，换一行 refreshToken。
 
-### 第 5 步：把整份登录文件放进 Secret
+### 登录文件不能用时：用短信换一行 refreshToken
 
-整份未加密文件可以直接当作登录态。不必自己剪出 token。文件里可能有邮箱或手机号，只贴进你自己仓库的 Secret，不要贴到聊天、Issue 或本页。
+在你自己的 Windows 电脑上打开 PowerShell。开始菜单里搜 **PowerShell**，打开后把下面这一整段粘贴进去，按回车。
+
+它会先问手机号。短信到了之后再问验证码。最后只打出一行 refreshToken。这一行以 `eyJ` 开头，中间正好有两个英文句点 `.`。
+
+```powershell
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+$phone = Read-Host "手机号"
+if ($phone -notmatch '^\d{11}$') { throw "手机号应为 11 位数字" }
+$bases = @(
+  "https://www.codebuddy.cn",
+  "https://www.workbuddy.cn",
+  "https://copilot.tencent.com"
+)
+function Invoke-WorkBuddy($url, $json) {
+  try {
+    return Invoke-RestMethod -Method Post -Uri $url -ContentType "application/json" -Body $json
+  } catch {
+    $resp = $_.Exception.Response
+    if ($null -eq $resp) { throw }
+    $reader = New-Object System.IO.StreamReader($resp.GetResponseStream())
+    $text = $reader.ReadToEnd()
+    if (-not $text) { throw }
+    return $text | ConvertFrom-Json
+  }
+}
+$base = $null
+foreach ($item in $bases) {
+  $sent = Invoke-WorkBuddy "$item/v2/plugin/login/send-sms" ('{"phone":"' + $phone + '"}')
+  if ($sent.code -eq 0 -or $sent.code -eq 200) { $base = $item; break }
+}
+if (-not $base) { throw "验证码没有发出去" }
+Write-Host "验证码已发送。"
+$code = Read-Host "验证码"
+$loginBody = '{"login_method":"phone","phone":"' + $phone + '","sms_code":"' + $code + '"}'
+$refresh = ""
+foreach ($item in @($base) + @($bases | Where-Object { $_ -ne $base })) {
+  $resp = Invoke-WorkBuddy "$item/v2/plugin/login/token" $loginBody
+  $token = [string]$resp.data.refreshToken
+  if ($token.StartsWith("eyJ") -and (($token.ToCharArray() | Where-Object { $_ -eq '.' }).Count -eq 2)) {
+    $refresh = $token
+    break
+  }
+}
+if (-not $refresh) { throw "没有换到带两个点的 refreshToken" }
+Write-Host "把下一行整行贴进 GitHub Secret WORKBUDDY_ACCESS_TOKEN。不要发到聊天、Issue 或仓库。"
+Write-Host $refresh
+```
+
+这段会先打开 TLS 1.2，再向官网发短信，并用验证码换成这一行 token。手机号只在你这台电脑上输入，不要把验证码或这行 token 发到聊天、Issue 或仓库。
+
+换到之后：
+
+1. 打开你的仓库 **Settings → Secrets and variables → Actions**。
+2. 更新 `WORKBUDDY_ACCESS_TOKEN`。只贴终端里最后那一整行。它应以 `eyJ` 开头，中间正好两个点。已经有这个 Secret 时，点右侧铅笔图标，替换旧内容再保存。
+3. 打开 **Actions → WorkBuddy Daily Checkin → Run workflow**，分支选 `main`。
+4. 成功时，日志最后一行的 `result` 是 `CLAIMED` 或 `ALREADY`，这次运行左边是绿色对勾。
+
+如果 PowerShell 里出现「基础连接已经关闭」，改贴下面这一段。它是同一台电脑上能到达短信接口的另一条命令。
+
+```powershell
+$phone = Read-Host "手机号"
+curl.exe -sS -X POST "https://www.codebuddy.cn/v2/plugin/login/send-sms" -H "Content-Type: application/json" -d "{\"phone\":\"$phone\"}"
+$code = Read-Host "验证码"
+curl.exe -sS -X POST "https://www.codebuddy.cn/v2/plugin/login/token" -H "Content-Type: application/json" -d "{\"login_method\":\"phone\",\"phone\":\"$phone\",\"sms_code\":\"$code\"}"
+```
+
+从打出来的 JSON 里只复制 `refreshToken` 的值，同样更新到 `WORKBUDDY_ACCESS_TOKEN`。复制时不要带两侧的引号。然后按上面的第 3 步手动跑一次。
+
+做完时你应该看到：Secret 里保存的是一行以 `eyJ` 开头、中间正好两个点的文字。接着从第 6 步看运行结果。
+
+### 第 5 步：把登录态放进 Secret
+
+登录文件能直接打开时，整份未加密文件就可以当作登录态，不必自己剪出 token。文件里可能有邮箱或手机号，只贴进你自己仓库的 Secret，不要贴到聊天、Issue 或本页。短信换到的那一行，也贴进下面同一个名字，只贴那一行。
 
 1. 在记事本里按 `Ctrl + A`（macOS 用 `Command + A`）全选，再复制。
 2. 回到浏览器里**你的仓库**。
@@ -172,7 +244,7 @@ WORKBUDDY_ACCESS_TOKEN
 
 你的 Fork 每天自动跑三次，北京时间 00:36、12:23、20:41。GitHub 可能推迟或丢掉其中一次，后面的次数会补上。今天已经领过时，再跑会得到 `ALREADY`，不会多领 100 积分。
 
-登录大约过一段时间会失效。失效时这次运行是红色的，日志里有登录态失效或 HTTP 401。处理办法：重新打开桌面端并登录，再按第 4 步和第 5 步，把新的整份文件更新进同一个 `WORKBUDDY_ACCESS_TOKEN`，然后按第 6 步再跑一次。
+登录大约过一段时间会失效。失效时这次运行是红色的，日志里有登录态失效或 HTTP 401。登录文件里还能复制 `accessToken` 时，重新打开桌面端并登录，再按第 4 步和第 5 步更新同一个 `WORKBUDDY_ACCESS_TOKEN`。文件里仍然没有可复制的 token 时，用上面的短信办法换一行新的 refreshToken，贴进同一个 Secret。然后按第 6 步再跑一次。
 
 原仓库有更新时：打开你的 Fork，点 **Sync fork**（同步复刻），再点 **Update branch**（更新分支）。Secret 还在，不用重填。
 
@@ -184,9 +256,9 @@ WORKBUDDY_ACCESS_TOKEN
 
 | 日志里的意思 | 回到哪一步 |
 |--------------|------------|
-| 缺少 `WORKBUDDY_ACCESS_TOKEN`，或登录态不是可用的 | 第 5 步。名字要完全一致；内容粘贴整份未加密文件 |
-| 看到 `$wbEncrypted`，或提示加密信封 | 第 4 步。换桌面端重新登录，直到文件里没有这段字 |
-| 登录态失效、HTTP 401、HTTP 403 | 桌面端重新登录，再做第 4 步和第 5 步，然后重跑 |
+| 缺少 `WORKBUDDY_ACCESS_TOKEN`，或登录态不是可用的 | 第 5 步。名字要完全一致。登录文件能打开就贴整份；不能打开就贴短信换到的那一行 |
+| 看到 `$wbEncrypted`，或提示加密信封 | 用「登录文件不能用时」的短信办法，换一行带两个点的 refreshToken |
+| 登录态失效、HTTP 401、HTTP 403 | 登录文件里还有 `accessToken` 就重做第 4 步和第 5 步。没有就用短信办法换新的一行，再重跑 |
 | 网络错误，或接口暂时不可用 | 等 10 分钟，再做一次第 6 步 |
 | 积分没增加 100，或真实账户积分未增长 | 先看第 8 步加油站。圆点没变实心就再跑一次；仍失败就等下一次自动运行 |
 | 「活跃地图仍是轻轻路过」 | 签到可能已经领到，地图还没点亮。等 10 分钟再跑一次第 6 步，然后重做第 8 步 |
@@ -269,11 +341,11 @@ Actions 上默认不打印账户总额、对比基准和历史签到日期。日
 |--------|------|----------|
 | 0 | 成功，或今天已经领过，并且活跃地图已点亮 | 不用处理 |
 | 1 | 没配登录态 | 检查 Secrets |
-| 2 | 登录态失效 | 桌面端重新登录，把新的登录文件写回 Secret，再手动跑一次 |
+| 2 | 登录态失效 | 登录文件里还有 `accessToken` 就写回 Secret。没有就用短信办法换一行 refreshToken，再手动跑一次 |
 | 3 | 网络或接口暂时不可用 | 等下一槽，或稍后手动跑 |
 | 4 | 积分没增加 100、余额没增长，或活跃地图补完仍是轻轻路过 | 打开日志看增长额和活跃分 |
 
-accessToken 过期后，如果 Secret 里有 refreshToken 或整份未加密登录 JSON，脚本会先换一张新 accessToken 再重试。新 token 只在这一次运行里使用，不会写回仓库。
+accessToken 过期后，如果 Secret 里有 refreshToken 或整份未加密登录 JSON，脚本会先换一张新 accessToken 再重试。新 token 只在这一次运行里使用，不会写回仓库。登录文件里已经没有可复制的 token 时，用手册里的短信办法换一行新的 refreshToken，更新到 `WORKBUDDY_ACCESS_TOKEN`。
 
 ### 只想自己剪出 token 时
 
